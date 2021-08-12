@@ -16,7 +16,15 @@ class RestaurantDetailCubit extends Cubit<RestaurantDetailState> {
       var dataRestaurant = await apiRepository.getRestaurantDetail(id);
       emit(RestaurantDetailLoaded(dataRestaurant));
     } on DioError catch (e) {
-      emit(RestaurantDetailError(e.message));
+      var msg = e.type == DioErrorType.cancel
+          ? "Canceled"
+          : e.type == DioErrorType.connectTimeout ||
+                  e.type == DioErrorType.sendTimeout ||
+                  e.type == DioErrorType.receiveTimeout
+              ? "Timeout"
+              : "";
+
+      emit(RestaurantDetailError(msg));
     }
   }
 }

@@ -1,3 +1,5 @@
+import 'customer_reviews.dart';
+
 class Restaurant {
   Restaurant({
     required this.id,
@@ -21,7 +23,7 @@ class Restaurant {
   List<Category> categories;
   Menus menus;
   double rating;
-  List<CustomerReview> customerReviews;
+  List<CustomerReviews> customerReviews;
 
   factory Restaurant.fromJson(Map<String, dynamic> json) => Restaurant(
         id: json["id"],
@@ -34,8 +36,8 @@ class Restaurant {
             json["categories"].map((x) => Category.fromJson(x))),
         menus: Menus.fromJson(json["menus"]),
         rating: json["rating"].toDouble(),
-        customerReviews: List<CustomerReview>.from(
-            json["customerReviews"].map((x) => CustomerReview.fromJson(x))),
+        customerReviews: List<CustomerReviews>.from(
+            json["customerReviews"].map((x) => CustomerReviews.fromJson(x))),
       );
 
   Map<String, dynamic> toJson() => {
@@ -66,30 +68,6 @@ class Category {
 
   Map<String, dynamic> toJson() => {
         "name": name,
-      };
-}
-
-class CustomerReview {
-  CustomerReview({
-    required this.name,
-    required this.review,
-    required this.date,
-  });
-
-  String name;
-  String review;
-  String date;
-
-  factory CustomerReview.fromJson(Map<String, dynamic> json) => CustomerReview(
-        name: json["name"],
-        review: json["review"],
-        date: json["date"],
-      );
-
-  Map<String, dynamic> toJson() => {
-        "name": name,
-        "review": review,
-        "date": date,
       };
 }
 

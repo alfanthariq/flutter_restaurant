@@ -16,7 +16,14 @@ class RestaurantSearchCubit extends Cubit<RestaurantSearchState> {
       var dataRestaurant = await apiRepository.searchRestaurant(query);
       emit(RestaurantSearchLoaded(dataRestaurant));
     } on DioError catch (e) {
-      emit(RestaurantSearchError(e.message));
+      var msg = e.type == DioErrorType.cancel
+          ? "Canceled"
+          : e.type == DioErrorType.connectTimeout ||
+                  e.type == DioErrorType.sendTimeout ||
+                  e.type == DioErrorType.receiveTimeout
+              ? "Timeout"
+              : "";
+      emit(RestaurantSearchError(msg));
     }
   }
 }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_restaurant/data/model/restaurant_detail.dart';
 import 'package:flutter_restaurant/data/model/restaurant_list.dart';
 import 'package:flutter_restaurant/data/model/restaurant_search.dart';
+import 'package:flutter_restaurant/data/model/review_result.dart';
 
 const baseUrl = "https://restaurant-api.dicoding.dev";
 
@@ -35,5 +36,17 @@ class ApiRepository {
     var queryParameters = {'q': query};
     var response = await dio.get("/search/", queryParameters: queryParameters);
     return RestaurantSearch.fromJson(response.data);
+  }
+
+  Future<ReviewResult> postReview(String id, String nama, String review) async {
+    var header = {'X-Auth-Token': '12345'};
+
+    dio.options.copyWith(
+        contentType: Headers.formUrlEncodedContentType, headers: header);
+
+    var data = {'id': id, 'name': nama, 'review': review};
+
+    var response = await dio.post("/review", data: data);
+    return ReviewResult.fromJson(response.data);
   }
 }

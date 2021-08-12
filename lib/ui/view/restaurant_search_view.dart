@@ -70,51 +70,57 @@ class _RestaurantSearchViewState extends State<RestaurantSearchView> {
               builder: (context, state) {
                 if (state is RestaurantSearchLoaded) {
                   var restaurant = state.data.restaurants;
-                  return ListView.builder(
-                    itemCount: restaurant.length,
-                    itemBuilder: (context, index) {
-                      return RestaurantItem(
-                        nama: restaurant[index].name,
-                        kota: restaurant[index].city,
-                        imgUrl:
-                            "https://restaurant-api.dicoding.dev/images/medium/${restaurant[index].pictureId}",
-                        rating: restaurant[index].rating.toString(),
-                        index: index,
-                        onTap: () {
-                          FocusScope.of(context).unfocus();
-                          Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                transitionDuration: Duration(milliseconds: 800),
-                                reverseTransitionDuration:
-                                    Duration(milliseconds: 800),
-                                pageBuilder: (BuildContext context,
-                                    Animation<double> animation,
-                                    Animation<double> secondaryAnimation) {
-                                  return BlocProvider<RestaurantDetailCubit>(
-                                      create: (context) =>
-                                          RestaurantDetailCubit(
-                                              ApiRepository()),
-                                      child: RestaurantDetailView(
-                                          id: restaurant[index].id,
-                                          imgId: restaurant[index].pictureId));
-                                },
-                                transitionsBuilder: (BuildContext context,
-                                    Animation<double> animation,
-                                    Animation<double> secondaryAnimation,
-                                    Widget child) {
-                                  return Align(
-                                    child: FadeTransition(
-                                      opacity: animation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                              ));
-                        },
-                      );
-                    },
-                  );
+                  return restaurant.length == 0
+                      ? NoData()
+                      : ListView.builder(
+                          itemCount: restaurant.length,
+                          itemBuilder: (context, index) {
+                            return RestaurantItem(
+                              nama: restaurant[index].name,
+                              kota: restaurant[index].city,
+                              imgUrl:
+                                  "https://restaurant-api.dicoding.dev/images/medium/${restaurant[index].pictureId}",
+                              rating: restaurant[index].rating.toString(),
+                              index: index,
+                              onTap: () {
+                                FocusScope.of(context).unfocus();
+                                Navigator.push(
+                                    context,
+                                    PageRouteBuilder(
+                                      transitionDuration:
+                                          Duration(milliseconds: 800),
+                                      reverseTransitionDuration:
+                                          Duration(milliseconds: 800),
+                                      pageBuilder: (BuildContext context,
+                                          Animation<double> animation,
+                                          Animation<double>
+                                              secondaryAnimation) {
+                                        return BlocProvider<
+                                                RestaurantDetailCubit>(
+                                            create: (context) =>
+                                                RestaurantDetailCubit(
+                                                    ApiRepository()),
+                                            child: RestaurantDetailView(
+                                                id: restaurant[index].id,
+                                                imgId: restaurant[index]
+                                                    .pictureId));
+                                      },
+                                      transitionsBuilder: (BuildContext context,
+                                          Animation<double> animation,
+                                          Animation<double> secondaryAnimation,
+                                          Widget child) {
+                                        return Align(
+                                          child: FadeTransition(
+                                            opacity: animation,
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                    ));
+                              },
+                            );
+                          },
+                        );
                 } else if (state is RestaurantSearchLoading) {
                   return LoadingView(message: state.loadingMsg);
                 } else {
@@ -123,8 +129,9 @@ class _RestaurantSearchViewState extends State<RestaurantSearchView> {
               },
               listener: (context, state) {
                 if (state is RestaurantSearchError) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text(state.errMsg)));
+                  var msg = state.errMsg != "" ? "(${state.errMsg})" : "";
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text("Failed to get restaurant data $msg")));
                 }
               },
             )),

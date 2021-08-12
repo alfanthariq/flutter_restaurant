@@ -16,7 +16,15 @@ class RestaurantListCubit extends Cubit<RestaurantListState> {
       var dataRestaurant = await apiRepository.getRestaurant();
       emit(RestaurantListLoaded(dataRestaurant));
     } on DioError catch (e) {
-      emit(RestaurantListError(e.message));
+      var msg = e.type == DioErrorType.cancel
+          ? "Canceled"
+          : e.type == DioErrorType.connectTimeout ||
+                  e.type == DioErrorType.sendTimeout ||
+                  e.type == DioErrorType.receiveTimeout
+              ? "Timeout"
+              : "";
+
+      emit(RestaurantListError(msg));
     }
   }
 }

@@ -19,17 +19,17 @@ class RestaurantListView extends StatefulWidget {
 }
 
 class _RestaurantListViewState extends State<RestaurantListView> {
-  final ScrollController? _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   double expandedHeight = 170.0;
   double toolbarHeight = 100.0;
   double bottomHeight = 30.0;
   double offset = 0.0;
-  final TextEditingController? _searchController = TextEditingController();
 
   bool lastStatus = true;
 
   _scrollListener() {
-    offset = _scrollController!.offset;
+    offset = _scrollController.offset;
     if (isShrink != lastStatus) {
       setState(() {
         lastStatus = isShrink;
@@ -38,10 +38,10 @@ class _RestaurantListViewState extends State<RestaurantListView> {
   }
 
   bool get isShrink {
-    if (_scrollController!.hasClients ||
+    if (_scrollController.hasClients ||
         // ignore: invalid_use_of_protected_member
-        _scrollController!.positions.length > 1) {
-      return _scrollController!.hasClients &&
+        _scrollController.positions.length > 1) {
+      return _scrollController.hasClients &&
           offset > (expandedHeight - toolbarHeight);
     } else
       return false;
@@ -51,8 +51,8 @@ class _RestaurantListViewState extends State<RestaurantListView> {
   void initState() {
     super.initState();
 
-    _scrollController?.addListener(_scrollListener);
-    _searchController?.addListener(() {
+    _scrollController.addListener(_scrollListener);
+    _searchController.addListener(() {
       setState(() {});
     });
 
@@ -61,9 +61,9 @@ class _RestaurantListViewState extends State<RestaurantListView> {
 
   @override
   void dispose() {
-    _scrollController?.removeListener(_scrollListener);
-    _scrollController?.dispose();
-    _searchController?.dispose();
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -71,7 +71,6 @@ class _RestaurantListViewState extends State<RestaurantListView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
-      extendBodyBehindAppBar: true,
       body: Container(
         child: NestedScrollView(
           controller: _scrollController,
@@ -119,29 +118,34 @@ class _RestaurantListViewState extends State<RestaurantListView> {
                   )),
             ];
           },
-          body: Column(
-            children: [
-              Expanded(
-                child: BlocConsumer<RestaurantListCubit, RestaurantListState>(
-                  listener: (context, state) {
-                    if (state is RestaurantListError) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(
-                              "Gagal mendapatkan data (${state.errMsg})")));
-                    }
-                  },
-                  builder: (context, state) {
-                    if (state is RestaurantListLoading) {
-                      return LoadingView(message: "Loading data ...");
-                    } else if (state is RestaurantListLoaded) {
-                      return buildDataList(state.data);
-                    } else {
-                      return NoData();
-                    }
-                  },
+          body: RefreshIndicator(
+            onRefresh: () => BlocProvider.of<RestaurantListCubit>(context)
+                .getRestaurantList(),
+            child: Column(
+              children: [
+                Expanded(
+                  child: BlocConsumer<RestaurantListCubit, RestaurantListState>(
+                    listener: (context, state) {
+                      if (state is RestaurantListError) {
+                        var msg = state.errMsg != "" ? "(${state.errMsg})" : "";
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content:
+                                Text("Failed to get restaurant data $msg")));
+                      }
+                    },
+                    builder: (context, state) {
+                      if (state is RestaurantListLoading) {
+                        return LoadingView(message: "Loading data ...");
+                      } else if (state is RestaurantListLoaded) {
+                        return buildDataList(state.data);
+                      } else {
+                        return NoData();
+                      }
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -181,7 +185,7 @@ class _RestaurantListViewState extends State<RestaurantListView> {
   Widget buildDataList(RestaurantList restaurant) {
     var itemFiltered = restaurant.restaurants.where((element) => element.name
         .toLowerCase()
-        .startsWith(_searchController!.text.toLowerCase()));
+        .startsWith(_searchController.text.toLowerCase()));
     return itemFiltered.length == 0
         ? NoData()
         : Container(
@@ -213,10 +217,11 @@ class _RestaurantListViewState extends State<RestaurantListView> {
                                 Animation<double> animation,
                                 Animation<double> secondaryAnimation) {
                               return BlocProvider<RestaurantDetailCubit>(
-                                  create: (context) =>
-                                      RestaurantDetailCubit(ApiRepository()),
-                                  child: RestaurantDetailView(
-                                      id: data.id, imgId: data.pictureId));
+                                create: (context) =>
+                                    RestaurantDetailCubit(ApiRepository()),
+                                child: RestaurantDetailView(
+                                    id: data.id, imgId: data.pictureId),
+                              );
                             },
                             transitionsBuilder: (BuildContext context,
                                 Animation<double> animation,

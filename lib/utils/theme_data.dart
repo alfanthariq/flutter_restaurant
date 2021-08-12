@@ -30,7 +30,7 @@ ThemeData darkTheme = ThemeData(
     textTheme: poppinsDark,
     cardColor: Colors.grey[850],
     textSelectionTheme: TextSelectionThemeData(
-        cursorColor: Colors.grey[900], selectionColor: Colors.grey[900]),
+        cursorColor: Colors.white, selectionColor: Colors.black),
     canvasColor: Colors.grey[900],
     brightness: Brightness.dark,
     appBarTheme: AppBarTheme(elevation: 0.0));
