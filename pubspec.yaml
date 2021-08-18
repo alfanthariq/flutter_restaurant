@@ -34,10 +34,26 @@ dependencies:
   modal_bottom_sheet: ^2.0.0
   flutter_form_builder: ^6.0.1
   progress_state_button: ^1.0.3
+  moor: ^4.4.1
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider: ^2.0.2
+  path: ^1.8.0
+  shared_preferences: ^2.0.6
+  google_nav_bar: ^5.0.5
+  equatable: ^2.0.3
+  flutter_local_notifications: ^8.1.1+1
+  rxdart: ^0.27.1
+  intl: ^0.17.0
+  android_alarm_manager: ^2.0.2
+  provider: ^5.0.0
+  cached_network_image: ^3.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  moor_generator: ^4.4.1
+  build_runner: ^2.1.1
+  bloc_test: ^8.1.0
 
 flutter:
   uses-material-design: true

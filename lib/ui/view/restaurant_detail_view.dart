@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,11 +19,12 @@ import 'package:flutter_toggle_tab/flutter_toggle_tab.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:progress_state_button/iconed_button.dart';
 import 'package:progress_state_button/progress_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RestaurantDetailView extends StatefulWidget {
   final String id;
-  final String imgId;
-  RestaurantDetailView({Key? key, required this.id, required this.imgId})
+  final String? imgId;
+  RestaurantDetailView({Key? key, required this.id, this.imgId})
       : super(key: key);
 
   @override
@@ -42,6 +44,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   ButtonState buttonState = ButtonState.idle;
   final _formKey = GlobalKey<FormBuilderState>();
   RestaurantDetail? detail;
+  bool isBookmark = false;
 
   bool lastStatus = true;
 
@@ -65,6 +68,8 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
     _scrollController = ScrollController();
     _scrollController?.addListener(_scrollListener);
 
+    checkBookmarked();
+
     BlocProvider.of<RestaurantDetailCubit>(context)
         .getRestaurantDetail(widget.id);
 
@@ -83,6 +88,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        color: Theme.of(context).backgroundColor,
         child: NestedScrollView(
             controller: _scrollController,
             headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -144,20 +150,45 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
                                   : Colors.grey[900]
                               : Colors.amber,
                         )),
+                    IconButton(
+                        onPressed: () {
+                          if (isBookmark) {
+                            removeBookmark();
+                          } else {
+                            bookmark();
+                          }
+                          checkBookmarked();
+                        },
+                        icon: FaIcon(
+                          isBookmark
+                              ? FontAwesomeIcons.solidBookmark
+                              : FontAwesomeIcons.bookmark,
+                          size: 15,
+                          color: isShrink
+                              ? Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.amberAccent
+                                  : Colors.grey[900]
+                              : Colors.amber,
+                        )),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Hero(
                       tag: imgUrl,
                       child: Container(
-                        decoration: BoxDecoration(
-                            color: Colors.grey[900],
-                            image: DecorationImage(
-                                image: NetworkImage(imgUrl),
-                                fit: BoxFit.cover,
-                                colorFilter: ColorFilter.mode(
-                                    Colors.grey[900]!.withOpacity(0.4),
-                                    BlendMode.dstATop))),
-                      ),
+                          child: CachedNetworkImage(
+                        imageUrl: imgUrl,
+                        imageBuilder: (context, imageProvider) {
+                          return Container(
+                              decoration: BoxDecoration(
+                                  color: Colors.grey[900],
+                                  image: DecorationImage(
+                                      image: imageProvider,
+                                      fit: BoxFit.cover,
+                                      colorFilter: ColorFilter.mode(
+                                          Colors.grey[900]!.withOpacity(0.4),
+                                          BlendMode.dstATop))));
+                        },
+                      )),
                     ),
                   ),
                   bottom: PreferredSize(
@@ -176,6 +207,10 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
                         "${state.data.restaurant.address}, ${state.data.restaurant.city}";
                     rating = state.data.restaurant.rating.toString();
                     detail = state.data;
+                    if (widget.imgId == null) {
+                      imgUrl =
+                          "https://restaurant-api.dicoding.dev/images/medium/${state.data.restaurant.pictureId}";
+                    }
                   });
                 } else if (state is RestaurantDetailError) {
                   var msg = state.errMsg != "" ? "(${state.errMsg})" : "";
@@ -420,6 +455,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
 
   Widget buildReviewSheet(Restaurant restaurant) {
     return Container(
+      color: Theme.of(context).backgroundColor,
       padding: EdgeInsets.only(left: 20, right: 20, bottom: 7),
       child: Column(
         children: [
@@ -468,163 +504,206 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   }
 
   Widget buildAddReview(String id, RestaurantDetail detail) {
-    return SingleChildScrollView(
-      child: BlocConsumer<AddReviewCubit, AddReviewState>(
-        listener: (context, state) {
-          if (state is AddReviewError) {
-            setState(() {
-              buttonState = ButtonState.fail;
-            });
-          } else if (state is PostedReview) {
-            setState(() {
-              buttonState = ButtonState.success;
-            });
-            Timer(Duration(seconds: 2), () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Success posting your review")));
+    return Container(
+      color: Theme.of(context).backgroundColor,
+      child: SingleChildScrollView(
+        child: BlocConsumer<AddReviewCubit, AddReviewState>(
+          listener: (context, state) {
+            if (state is AddReviewError) {
               setState(() {
-                detail.restaurant.customerReviews = state.data.customerReviews!;
+                buttonState = ButtonState.fail;
               });
-            });
-          } else if (state is AddReviewInitial) {
-            setState(() {
-              buttonState = ButtonState.idle;
-            });
-          }
-        },
-        builder: (context, state) {
-          return Container(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Add Review",
-                            style: Theme.of(context).textTheme.headline6!.apply(
-                                color: Theme.of(context).indicatorColor)),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: FaIcon(
-                              FontAwesomeIcons.chevronDown,
-                              size: 15,
+            } else if (state is PostedReview) {
+              setState(() {
+                buttonState = ButtonState.success;
+              });
+              Timer(Duration(seconds: 2), () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Success posting your review")));
+                setState(() {
+                  detail.restaurant.customerReviews =
+                      state.data.customerReviews!;
+                });
+              });
+            } else if (state is AddReviewInitial) {
+              setState(() {
+                buttonState = ButtonState.idle;
+              });
+            }
+          },
+          builder: (context, state) {
+            return Container(
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Add Review",
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headline6!
+                                  .apply(
+                                      color: Theme.of(context).indicatorColor)),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: FaIcon(
+                                FontAwesomeIcons.chevronDown,
+                                size: 15,
+                              ),
                             ),
-                          ),
-                        )
-                      ],
-                    )),
-                Padding(
-                  padding: const EdgeInsets.only(left: 10, right: 10),
-                  child: FormBuilder(
-                      key: _formKey,
-                      child: Container(
-                        margin: EdgeInsets.only(top: 20),
-                        child: Column(
-                          children: [
-                            FormBuilderTextField(
-                              name: "nama",
-                              keyboardType: TextInputType.text,
-                              textCapitalization: TextCapitalization.sentences,
-                              textInputAction: TextInputAction.next,
-                              validator: FormBuilderValidators.compose([
-                                FormBuilderValidators.required(context),
-                              ]),
-                              decoration: InputDecoration(
-                                  labelText: "Your name",
-                                  labelStyle: TextStyle(fontSize: 20),
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  border: OutlineInputBorder()),
-                            ),
-                            Padding(padding: EdgeInsets.all(10)),
-                            FormBuilderTextField(
-                              name: "review",
-                              textCapitalization: TextCapitalization.sentences,
-                              minLines: 5,
-                              maxLines: 5,
-                              textInputAction: TextInputAction.newline,
-                              validator: FormBuilderValidators.compose([
-                                FormBuilderValidators.required(context),
-                              ]),
-                              keyboardType: TextInputType.multiline,
-                              decoration: InputDecoration(
-                                  labelText: "Your review",
-                                  labelStyle: TextStyle(fontSize: 20),
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
-                                  border: OutlineInputBorder()),
-                            ),
-                          ],
-                        ),
+                          )
+                        ],
                       )),
-                ),
-                Padding(padding: EdgeInsets.only(top: 20)),
-                Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: ProgressButton.icon(
-                      iconedButtons: {
-                        ButtonState.idle: IconedButton(
-                            text: "Send",
-                            icon: Icon(Icons.send, color: Colors.grey[900]),
-                            color: Theme.of(context).buttonColor),
-                        ButtonState.loading: IconedButton(
-                            text: "Loading",
-                            color: Theme.of(context).buttonColor),
-                        ButtonState.fail: IconedButton(
-                            text: "Failed",
-                            icon: Icon(Icons.cancel, color: Colors.grey[900]),
-                            color: Colors.red.shade300),
-                        ButtonState.success: IconedButton(
-                            text: "Success",
-                            icon: Icon(
-                              Icons.check_circle,
-                              color: Colors.grey[900],
-                            ),
-                            color: Colors.green.shade400)
-                      },
-                      progressIndicator: CircularProgressIndicator(
-                        color: Colors.grey[900],
-                      ),
-                      textStyle: TextStyle(color: Colors.grey[900]),
-                      onPressed: () {
-                        if (buttonState != ButtonState.loading) {
-                          FocusScope.of(context).unfocus();
-                          _formKey.currentState?.save();
-                          var data = Map<String, dynamic>();
-                          data.addAll(_formKey.currentState!.value);
-                          data["id"] = id;
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10, right: 10),
+                    child: FormBuilder(
+                        key: _formKey,
+                        child: Container(
+                          margin: EdgeInsets.only(top: 20),
+                          child: Column(
+                            children: [
+                              FormBuilderTextField(
+                                name: "nama",
+                                keyboardType: TextInputType.text,
+                                textCapitalization:
+                                    TextCapitalization.sentences,
+                                textInputAction: TextInputAction.next,
+                                validator: FormBuilderValidators.compose([
+                                  FormBuilderValidators.required(context),
+                                ]),
+                                decoration: InputDecoration(
+                                    labelText: "Your name",
+                                    labelStyle: TextStyle(fontSize: 20),
+                                    floatingLabelBehavior:
+                                        FloatingLabelBehavior.always,
+                                    border: OutlineInputBorder()),
+                              ),
+                              Padding(padding: EdgeInsets.all(10)),
+                              FormBuilderTextField(
+                                name: "review",
+                                textCapitalization:
+                                    TextCapitalization.sentences,
+                                minLines: 5,
+                                maxLines: 5,
+                                textInputAction: TextInputAction.newline,
+                                validator: FormBuilderValidators.compose([
+                                  FormBuilderValidators.required(context),
+                                ]),
+                                keyboardType: TextInputType.multiline,
+                                decoration: InputDecoration(
+                                    labelText: "Your review",
+                                    labelStyle: TextStyle(fontSize: 20),
+                                    floatingLabelBehavior:
+                                        FloatingLabelBehavior.always,
+                                    border: OutlineInputBorder()),
+                              ),
+                            ],
+                          ),
+                        )),
+                  ),
+                  Padding(padding: EdgeInsets.only(top: 20)),
+                  Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: ProgressButton.icon(
+                        iconedButtons: {
+                          ButtonState.idle: IconedButton(
+                              text: "Send",
+                              icon: Icon(Icons.send, color: Colors.grey[900]),
+                              color: Theme.of(context).buttonColor),
+                          ButtonState.loading: IconedButton(
+                              text: "Loading",
+                              color: Theme.of(context).buttonColor),
+                          ButtonState.fail: IconedButton(
+                              text: "Failed",
+                              icon: Icon(Icons.cancel, color: Colors.grey[900]),
+                              color: Colors.red.shade300),
+                          ButtonState.success: IconedButton(
+                              text: "Success",
+                              icon: Icon(
+                                Icons.check_circle,
+                                color: Colors.grey[900],
+                              ),
+                              color: Colors.green.shade400)
+                        },
+                        progressIndicator: CircularProgressIndicator(
+                          color: Colors.grey[900],
+                        ),
+                        textStyle: TextStyle(color: Colors.grey[900]),
+                        onPressed: () {
+                          if (buttonState != ButtonState.loading) {
+                            FocusScope.of(context).unfocus();
+                            _formKey.currentState?.save();
+                            var data = Map<String, dynamic>();
+                            data.addAll(_formKey.currentState!.value);
+                            data["id"] = id;
 
-                          if (_formKey.currentState!.validate()) {
-                            setState(() {
-                              buttonState = ButtonState.loading;
-                            });
-                            BlocProvider.of<AddReviewCubit>(context)
-                                .postReview(data);
+                            if (_formKey.currentState!.validate()) {
+                              setState(() {
+                                buttonState = ButtonState.loading;
+                              });
+                              BlocProvider.of<AddReviewCubit>(context)
+                                  .postReview(data);
+                            }
                           }
-                        }
-                      },
-                      state: buttonState,
+                        },
+                        state: buttonState,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
+  }
+
+  void bookmark() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> fav =
+        prefs.getStringList("favourite") ?? List<String>.empty(growable: true);
+    fav.add(widget.id);
+
+    prefs.setStringList("favourite", fav);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("Saved to your bookmark"),
+    ));
+  }
+
+  void removeBookmark() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> fav =
+        prefs.getStringList("favourite") ?? List<String>.empty(growable: true);
+    fav.remove(widget.id);
+
+    prefs.setStringList("favourite", fav);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("Removed from your bookmark"),
+    ));
+  }
+
+  void checkBookmarked() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> fav =
+        prefs.getStringList("favourite") ?? List<String>.empty(growable: true);
+
+    setState(() {
+      isBookmark = fav.contains(widget.id);
+    });
   }
 }

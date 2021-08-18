@@ -1,8 +1,10 @@
 part of 'restaurant_list_cubit.dart';
 
 @immutable
-abstract class RestaurantListState {
+abstract class RestaurantListState extends Equatable {
   const RestaurantListState();
+  @override
+  List<Object> get props => [];
 }
 
 class RestaurantListInitial extends RestaurantListState {
@@ -26,14 +28,17 @@ class RestaurantListLoading extends RestaurantListState {
 }
 
 class RestaurantListLoaded extends RestaurantListState {
-  final RestaurantList data;
+  final List<RestaurantDbData> data;
   const RestaurantListLoaded(this.data);
+
+  @override
+  List<Object> get props => [...data];
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is RestaurantListLoaded && other.data == data;
+    return other is RestaurantListLoaded && listEquals(other.data, data);
   }
 
   @override

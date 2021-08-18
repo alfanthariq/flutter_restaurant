@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_restaurant/cubit/restaurant_detail_cubit.dart';
 import 'package:flutter_restaurant/cubit/restaurant_list_cubit.dart';
-import 'package:flutter_restaurant/data/model/restaurant_list.dart';
-import 'package:flutter_restaurant/data/model/restaurant_min.dart';
+import 'package:flutter_restaurant/data/db/db_helper.dart';
 import 'package:flutter_restaurant/data/repos/api_repos.dart';
+import 'package:flutter_restaurant/ui/custom/header.dart';
 import 'package:flutter_restaurant/ui/custom/loading.dart';
 import 'package:flutter_restaurant/ui/custom/no_data.dart';
 import 'package:flutter_restaurant/ui/custom/restaurant_item.dart';
 import 'package:flutter_restaurant/ui/view/restaurant_detail_view.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class RestaurantListView extends StatefulWidget {
   RestaurantListView({Key? key}) : super(key: key);
@@ -86,23 +85,11 @@ class _RestaurantListViewState extends State<RestaurantListView> {
                   collapsedHeight: toolbarHeight,
                   toolbarHeight: toolbarHeight,
                   brightness: Brightness.dark,
-                  title: Container(child: buildHeader()),
+                  title: HeaderView(
+                      isShrink: isShrink,
+                      title: "Restaurant",
+                      subtitle: "This is recommendation restaurant for you !"),
                   elevation: 0,
-                  actions: [
-                    IconButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/search');
-                        },
-                        icon: FaIcon(
-                          FontAwesomeIcons.search,
-                          color: isShrink
-                              ? Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.amberAccent
-                                  : Colors.grey[900]
-                              : Colors.amberAccent,
-                          size: 20,
-                        ))
-                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Container(
                       decoration: BoxDecoration(
@@ -120,7 +107,7 @@ class _RestaurantListViewState extends State<RestaurantListView> {
           },
           body: RefreshIndicator(
             onRefresh: () => BlocProvider.of<RestaurantListCubit>(context)
-                .getRestaurantList(),
+                .getRestaurantListApi(),
             child: Column(
               children: [
                 Expanded(
@@ -137,7 +124,11 @@ class _RestaurantListViewState extends State<RestaurantListView> {
                       if (state is RestaurantListLoading) {
                         return LoadingView(message: "Loading data ...");
                       } else if (state is RestaurantListLoaded) {
-                        return buildDataList(state.data);
+                        if (state.data.isEmpty) {
+                          return NoData();
+                        } else {
+                          return buildDataList(state.data);
+                        }
                       } else {
                         return NoData();
                       }
@@ -152,38 +143,8 @@ class _RestaurantListViewState extends State<RestaurantListView> {
     );
   }
 
-  Widget buildHeader() {
-    return Container(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Text(
-            "Restaurant",
-            style: Theme.of(context).textTheme.headline4?.copyWith(
-                color: isShrink
-                    ? Theme.of(context).brightness == Brightness.dark
-                        ? Colors.amberAccent
-                        : Colors.grey[900]
-                    : Colors.amberAccent),
-          ),
-          Text(
-            "This is recommendation restaurant for you !",
-            style: Theme.of(context).textTheme.bodyText2?.copyWith(
-                color: isShrink
-                    ? Theme.of(context).brightness == Brightness.dark
-                        ? Colors.amberAccent
-                        : Colors.grey[900]
-                    : Colors.amberAccent),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget buildDataList(RestaurantList restaurant) {
-    var itemFiltered = restaurant.restaurants.where((element) => element.name
+  Widget buildDataList(List<RestaurantDbData> restaurant) {
+    var itemFiltered = restaurant.where((element) => element.name
         .toLowerCase()
         .startsWith(_searchController.text.toLowerCase()));
     return itemFiltered.length == 0
@@ -196,7 +157,7 @@ class _RestaurantListViewState extends State<RestaurantListView> {
               shrinkWrap: true,
               itemCount: itemFiltered.length,
               itemBuilder: (context, index) {
-                final RestaurantMin data = itemFiltered.elementAt(index);
+                final RestaurantDbData data = itemFiltered.elementAt(index);
 
                 return RestaurantItem(
                     nama: data.name,

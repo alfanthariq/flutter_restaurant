@@ -1,6 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:transparent_image/transparent_image.dart';
 
 class RestaurantItem extends StatelessWidget {
   final String nama;
@@ -34,64 +34,38 @@ class RestaurantItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 140,
-              height: 128,
-              margin: EdgeInsets.only(left: 10),
-              child: Stack(
-                children: <Widget>[
-                  Center(
-                      child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
-                  )),
-                  Center(
-                    child: imgUrl == ""
-                        ? Container(
-                            child: Center(
-                              child: Icon(
-                                Icons.image_not_supported,
-                                color: Theme.of(context).cardColor,
-                              ),
-                            ),
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(7),
-                            child: Hero(
-                              tag: imgUrl,
-                              child: FadeInImage.memoryNetwork(
-                                placeholder: kTransparentImage,
-                                width: 140,
-                                height: 100,
-                                image: imgUrl,
-                                fit: BoxFit.cover,
-                                placeholderErrorBuilder:
-                                    (context, error, stackTrace) {
-                                  return Container(
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                imageErrorBuilder:
-                                    (context, error, stackTrace) {
-                                  return Container(
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
+                width: 140,
+                height: 128,
+                child: Hero(
+                    tag: imgUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: imgUrl,
+                      imageBuilder: (context, imageProvider) => Container(
+                        width: 140,
+                        height: 128,
+                        margin: EdgeInsets.only(left: 10, bottom: 13, top: 13),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.rectangle,
+                          borderRadius: BorderRadius.circular(7),
+                          image: DecorationImage(
+                              image: imageProvider, fit: BoxFit.cover),
+                        ),
+                      ),
+                      progressIndicatorBuilder: (context, url, progress) {
+                        return Center(
+                          child: CircularProgressIndicator(
+                              value: progress.progress),
+                        );
+                      },
+                      errorWidget: (context, url, error) {
+                        return Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey,
                           ),
-                  ),
-                ],
-              ),
-            ),
+                        );
+                      },
+                    ))),
             Padding(padding: EdgeInsets.only(left: 16.0)),
             Expanded(
                 child: Column(

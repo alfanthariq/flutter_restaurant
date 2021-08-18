@@ -24,6 +24,8 @@ class RestaurantSearchCubit extends Cubit<RestaurantSearchState> {
               ? "Timeout"
               : "";
       emit(RestaurantSearchError(msg));
+    } catch (e) {
+      emit(RestaurantSearchError("Parsing error"));
     }
   }
 }

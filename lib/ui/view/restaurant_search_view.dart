@@ -32,26 +32,18 @@ class _RestaurantSearchViewState extends State<RestaurantSearchView> {
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).buttonColor,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: Icon(
-            CupertinoIcons.back,
-            color: Colors.grey[900],
-          ),
-        ),
+        backgroundColor:
+            Theme.of(context).bottomNavigationBarTheme.backgroundColor,
         title: Text(
           "Search",
-          style: TextStyle(color: Colors.grey[900]),
+          style: TextStyle(color: Theme.of(context).indicatorColor),
         ),
       ),
       body: Container(
         child: Column(
           children: [
             Container(
-              decoration: BoxDecoration(color: Theme.of(context).buttonColor),
+              decoration: BoxDecoration(color: Theme.of(context).canvasColor),
               child: InputFieldArea(
                 controller: _searchController!,
                 hint: "Input restaurant / food / drink name",

@@ -25,6 +25,8 @@ class RestaurantDetailCubit extends Cubit<RestaurantDetailState> {
               : "";
 
       emit(RestaurantDetailError(msg));
+    } catch (e) {
+      emit(RestaurantDetailError("Parsing error"));
     }
   }
 }
